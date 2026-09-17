@@ -5,10 +5,10 @@ Round 1 local submission for the Predixion AI x TalentX Open-Weight Collections 
 ## Architecture
 
 ```text
-traffic generator -> inference API -> EventProcessor -> ResilientPipeline
+traffic generator -> inference API -> EventProcessor ----> ResilientPipeline
                                                    |       |-- retry/backoff/jitter
                                                    |       `-- circuit breaker
-                                                   `-> PipelineProvider -> mock HTTP pipeline
+                                                   `  ----> PipelineProvider -> mock HTTP pipeline
                                                         failed -> SQLite DLQ
 ```
 
