@@ -3,7 +3,8 @@
 Round 1 local submission for the Predixion AI x TalentX Open-Weight Collections Agent Challenge. This is a synthetic-only FastAPI service: it retries transient provider failures, opens a circuit when logical requests fail, persists exhausted work in SQLite, and supports safe replay.
 
 ## Architecture
-https://chatgpt.com/backend-api/estuary/content?id=file_00000000d9cc81f59a1ef57adf1fdff0&ts=497121&p=fs&cid=1&sig=d61f73bb82cf0093984f4904efe318917f45142997a22498084a6cec2165ffca&v=0
+<img width="1536" height="1024" alt="ChatGPT Image Sep 17, 2026, 02_49_13 AM" src="https://github.com/user-attachments/assets/9fd9260b-287f-4854-a836-26dc1a4ed0c5" />
+
 
 The provider makes one downstream call. Resilience owns retries, and the application owns orchestration and DLQ decisions. Circuit failures count once per logical event after all of that event's retry attempts are exhausted; circuit rejection is an immediate logical failure and is not retried.
 
