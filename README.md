@@ -55,18 +55,7 @@ The exact profile is encoded in `scripts/generate_traffic.py`: 10 calls/min base
 
 Inspect/replay from the shell with `python scripts/inspect_dlq.py`, `python scripts/inspect_dlq.py --event-id ID`, `python scripts/replay_dlq.py --event-id ID`, or `python scripts/replay_dlq.py --pending`.
 
-## Submission checklist
 
-From the project directory, verify the clean source tree before publishing:
-
-```powershell
-python -m pytest -q
-Get-ChildItem -Recurse -File | Where-Object {$_.FullName -notmatch '\\.pytest_cache|__pycache__|\\data'}
-```
-
-Publish the contents of this directory to a public GitHub repository. Include the source, tests, README, runbook, cost analysis, Docker files, requirements, `.env.example`, and `LICENSE`. Do not commit `.env`, `data/`, SQLite files, virtual environments, caches, or real borrower data. A reviewer can then clone the repository and follow the Quick start section exactly.
-
-If a port is already in use, stop the existing process or start the mock and inference services on different ports and update `DOWNSTREAM_URL` accordingly. The default commands use ports `8000` and `8001`.
 
 ## Testing
 
@@ -82,7 +71,8 @@ This local implementation uses synchronous SQLite access inside async request ha
 
 ## Cost
 
-See [COST_ANALYSIS.md](COST_ANALYSIS.md) for independent Config A/B calculations and fixed ALB/NAT overhead discussion. Round 1 does not deploy AWS infrastructure.
+See [COST_ANALYSIS.md](COST_ANALYSIS.md) for independent Config A/B calculations and fixed ALB/NAT overhead discussion. 
+
 
 ## License
 
