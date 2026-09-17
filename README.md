@@ -9,10 +9,10 @@ Round 1 local submission for the Predixion AI x TalentX Open-Weight Collections 
 The provider makes one downstream call. Resilience owns retries, and the application owns orchestration and DLQ decisions. Circuit failures count once per logical event after all of that event's retry attempts are exhausted; circuit rejection is an immediate logical failure and is not retried.
 
 ## Quick start
-
+```
 git clone https://github.com/gk-anonymous/Calling_Agent-Round1-.git
 cd Calling_Agent-Round1-
-
+```
 
 Prerequisite: Python 3.12+ and pip. From a clean checkout:
 
