@@ -5,3 +5,6 @@ __pycache__/
 .env
 data/*.sqlite3
 data/*.sqlite3-*
+.terraform/
+*.tfstate
+*.tfstate.*
