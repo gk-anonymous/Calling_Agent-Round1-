@@ -2,6 +2,7 @@ import json
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 
 class DLQRepository:
@@ -82,3 +83,124 @@ class DLQRepository:
     def decode_event(row):
         from app.domain.models import CallEvent
         return CallEvent.model_validate(json.loads(row["original_payload"]))
+
+
+class AwsDLQRepository:
+    """DynamoDB-backed DLQ records with SQS event references."""
+
+    def __init__(self, table_name: str, queue_url: str, *, table: Any = None, sqs: Any = None):
+        if not table_name or not queue_url:
+            raise ValueError("AWS DLQ requires AWS_DLQ_TABLE and AWS_DLQ_QUEUE_URL")
+        if table is None or sqs is None:
+            import boto3
+            table = table or boto3.resource("dynamodb").Table(table_name)
+            sqs = sqs or boto3.client("sqs")
+        self.table = table
+        self.sqs = sqs
+        self.queue_url = queue_url
+
+    @staticmethod
+    def _key(record_type: str, event_id: str) -> dict:
+        return {"record_type": record_type, "event_id": event_id}
+
+    def enqueue(self, event, reason: str, retry_count: int) -> dict:
+        now = datetime.now(timezone.utc).isoformat()
+        event_id = str(event.event_id)
+        item = {
+            **self._key("DLQ", event_id),
+            "campaign_id": event.campaign_id,
+            "original_payload": event.model_dump_json(),
+            "failure_reason": reason,
+            "retry_count": retry_count,
+            "first_failed_at": now,
+            "last_failed_at": now,
+            "status": "PENDING",
+            "replay_count": 0,
+            "last_error": reason,
+        }
+        self.table.put_item(Item=item)
+        self.sqs.send_message(QueueUrl=self.queue_url, MessageBody=json.dumps({"event_id": event_id}))
+        return item
+
+    def get(self, event_id: str):
+        response = self.table.get_item(Key=self._key("DLQ", event_id))
+        return response.get("Item")
+
+    def claim_event(self, event_id: str) -> bool:
+        try:
+            self.table.put_item(
+                Item={**self._key("PROCESSED", event_id), "status": "PROCESSING", "processed_at": datetime.now(timezone.utc).isoformat()},
+                ConditionExpression="attribute_not_exists(record_type)",
+            )
+            return True
+        except Exception as exc:
+            if exc.__class__.__name__ != "ConditionalCheckFailedException":
+                raise
+            return False
+
+    def mark_processed(self, event_id: str) -> None:
+        self.table.update_item(
+            Key=self._key("PROCESSED", event_id),
+            UpdateExpression="SET #status = :status, processed_at = :processed_at",
+            ExpressionAttributeNames={"#status": "status"},
+            ExpressionAttributeValues={":status": "COMPLETED", ":processed_at": datetime.now(timezone.utc).isoformat()},
+        )
+
+    def release_event(self, event_id: str) -> None:
+        self.table.delete_item(Key=self._key("PROCESSED", event_id))
+
+    def list(self, status: str | None = None):
+        response = self.table.scan()
+        rows = [item for item in response.get("Items", []) if item.get("record_type") == "DLQ"]
+        if status:
+            rows = [item for item in rows if item.get("status") == status]
+        return sorted(rows, key=lambda item: item.get("last_failed_at", ""), reverse=True)
+
+    def begin_replay(self, event_id: str):
+        row = self.get(event_id)
+        if not row or row.get("status") == "RESOLVED":
+            return None
+        try:
+            response = self.table.update_item(
+                Key=self._key("DLQ", event_id),
+                UpdateExpression="SET #status = :replaying ADD replay_count :one",
+                ConditionExpression="#status IN (:pending, :failed)",
+                ExpressionAttributeNames={"#status": "status"},
+                ExpressionAttributeValues={":replaying": "REPLAYING", ":pending": "PENDING", ":failed": "FAILED", ":one": 1},
+                ReturnValues="ALL_NEW",
+            )
+            return response.get("Attributes")
+        except Exception as exc:
+            if exc.__class__.__name__ == "ConditionalCheckFailedException":
+                return None
+            raise
+
+    def finish_replay(self, event_id: str, success: bool, error: str = ""):
+        self.table.update_item(
+            Key=self._key("DLQ", event_id),
+            UpdateExpression="SET #status = :status, last_error = :error, last_failed_at = :updated",
+            ExpressionAttributeNames={"#status": "status"},
+            ExpressionAttributeValues={":status": "RESOLVED" if success else "FAILED", ":error": error, ":updated": datetime.now(timezone.utc).isoformat()},
+        )
+
+    def acknowledge(self, event_id: str) -> None:
+        response = self.sqs.receive_message(QueueUrl=self.queue_url, MaxNumberOfMessages=10, VisibilityTimeout=0)
+        for message in response.get("Messages", []):
+            try:
+                reference = json.loads(message["Body"])
+            except (KeyError, json.JSONDecodeError):
+                continue
+            if reference.get("event_id") == event_id:
+                self.sqs.delete_message(QueueUrl=self.queue_url, ReceiptHandle=message["ReceiptHandle"])
+                return
+
+    @staticmethod
+    def decode_event(row):
+        from app.domain.models import CallEvent
+        return CallEvent.model_validate(json.loads(row["original_payload"]))
+
+
+def create_repository(settings):
+    if settings.dlq_backend.lower() == "aws":
+        return AwsDLQRepository(settings.aws_dlq_table, settings.aws_dlq_queue_url)
+    return DLQRepository(settings.db_path)

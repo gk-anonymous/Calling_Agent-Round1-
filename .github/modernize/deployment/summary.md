@@ -16,7 +16,7 @@ Deployment completed successfully in `ap-south-1` using ECS Fargate.
 
 ## Endpoint
 
-`http://collections-challenge-demo-1124482110.ap-south-1.elb.amazonaws.com`
+`http://collections-challenge-demo-722200242.ap-south-1.elb.amazonaws.com`
 
 ## Verification Evidence
 
@@ -24,9 +24,8 @@ Deployment completed successfully in `ap-south-1` using ECS Fargate.
 - Terraform plan: no changes pending
 - ECS service: `ACTIVE`, 1 desired and 1 running task
 - Health: `status=ok`, circuit state `CLOSED`
-- Traffic demo: 13 requests, 13 successful, 0 failed
-- Retry attempts: 2
-- Pending DLQ records: 0
+- ALB target health: `healthy`
+- Terraform plan: no changes pending
 
 ## Cost Note
 

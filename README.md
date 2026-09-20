@@ -47,6 +47,10 @@ No credentials, cloud account, database server, model download, console setup, o
 
 `POST /events/process` accepts the challenge event schema and returns success, outcome, retry count, circuit state, downstream latency, total latency, and DLQ status. `GET /health` checks service health. `GET /metrics` returns local counters and recent request latency. `GET /dlq` lists records; `GET /dlq/{event_id}` inspects one. `POST /dlq/{event_id}/replay` replays one event through the normal processing path; `POST /dlq/replay-pending` replays all pending or failed records.
 
+The metrics response also includes request success/error/retry rates and latency p50, p90, p95, and p99 calculated from a bounded recent sample. In AWS mode, completed requests publish the same bounded metric taxonomy to CloudWatch under the configured namespace and `Service` dimension.
+
+Set `DLQ_BACKEND=aws` with `AWS_DLQ_TABLE` and `AWS_DLQ_QUEUE_URL` to use DynamoDB for durable DLQ records and SQS for event references. SQLite remains the default for local development. The AWS replay path updates DynamoDB status and preserves idempotent event claims.
+
 ## Configuration and behavior
 
 Copy `.env.example` to `.env`. `MAX_ATTEMPTS`, backoff delays, jitter, circuit threshold/recovery timeout, downstream URL, failure rate, and lognormal latency parameters are configurable. The default sigma is `0.55`, calibrated from the specified `0.35` starting point to put p90/p99 nearer the challenge targets while retaining a p50 near 300 ms. No secrets are needed or accepted. Retries apply only to HTTP 503, timeouts, and connection errors. Permanent HTTP errors and invalid provider responses are not retried. Structured event logs include event/campaign IDs, success, latencies, retry count, circuit state, final outcome, and DLQ status; retry logs include event ID, attempt, maximum attempts, delay, and error.
@@ -68,6 +72,8 @@ Run `python -m pytest -q`. Tests use fake providers, injected sleep, and determi
 ## Open-weight migration
 
 `MockPipelineProvider` can be replaced by an `OpenWeightPipelineProvider` that makes one local or internal call to faster-whisper large-v3/large-v3-turbo for STT, Mistral-7B-Instruct-v0.3 or Llama-3.1-8B-Instruct for the LLM, and Piper or Coqui XTTS-v2 for TTS. Only the provider adapter and its response mapping change; retry, circuit breaker, DLQ, orchestration, and observability remain unchanged. Review each model's license and usage terms before public Apache 2.0 release.
+
+The adapter is stage-based and testable without downloading models or requiring a GPU. See [infra/terraform/GPU_OPTION.md](infra/terraform/GPU_OPTION.md) for the approval-gated `g5.xlarge` option and CPU fallback.
 
 ## Limitations and security
 

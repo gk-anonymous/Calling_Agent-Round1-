@@ -2,9 +2,9 @@ from uuid import UUID
 from fastapi import FastAPI, HTTPException
 
 from app.config import Settings
-from app.dlq.repository import DLQRepository
+from app.dlq.repository import create_repository
 from app.domain.models import CallEvent
-from app.observability import Metrics, configure_logging
+from app.observability import Metrics, cloudwatch_publisher, configure_logging
 from app.providers.mock import MockPipelineProvider
 from app.resilience import CircuitBreaker, ResilientPipeline
 from app.services.processor import EventProcessor
@@ -14,10 +14,13 @@ def create_app(settings: Settings | None = None, processor: EventProcessor | Non
     settings = settings or Settings()
     configure_logging()
     if processor is None:
+        if settings.provider_backend.lower() != "mock":
+            raise RuntimeError("Open-weight backend requires injected STT, LLM, and TTS stage clients")
         provider = MockPipelineProvider(settings.downstream_url, settings.http_timeout_seconds)
         breaker = CircuitBreaker(settings.circuit_failure_threshold, settings.circuit_recovery_timeout_seconds, settings.circuit_half_open_probes)
         resilient = ResilientPipeline(provider, settings.max_attempts, settings.initial_backoff_seconds, settings.max_backoff_seconds, settings.jitter_ratio, breaker)
-        processor = EventProcessor(resilient, DLQRepository(settings.db_path), Metrics())
+        publisher = cloudwatch_publisher(settings.cloudwatch_namespace, settings.service_name, settings.aws_region) if settings.publish_cloudwatch_metrics else None
+        processor = EventProcessor(resilient, create_repository(settings), Metrics(publisher=publisher))
     app = FastAPI(title="Collections Inference Service", version="1.0.0")
     app.state.processor = processor
 

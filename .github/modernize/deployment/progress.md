@@ -26,5 +26,5 @@ AWS identity, Docker, and Terraform are available in the current PowerShell sess
 - Terraform plan reports no changes.
 - ECS service is active with one running task.
 - ALB health returned `status=ok` and circuit state `CLOSED`.
-- Traffic test completed with 13 successful requests, 2 retries, and 0 pending DLQ records.
+- Current deployment verified with Terraform reporting no changes, ECS `ACTIVE` with 1 running task, healthy ALB target, and `/health` returning `status=ok`.
 - AWS resources remain deployed for user review; teardown is intentionally pending.

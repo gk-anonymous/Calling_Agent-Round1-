@@ -1,0 +1,55 @@
+project:
+  scope_path: "."
+  loc: 0
+  languages: [python, hcl, markdown]
+  git: true
+  structure:
+    app: "FastAPI application, domain, providers, resilience, DLQ"
+    tests: "Unit and integration tests"
+    infra/terraform: "AWS Terraform definitions"
+    scripts: "Traffic, latency, and DLQ operation scripts"
+  notes: "Collections voice-agent inference service; execution follows the approved round1-round2-modernization plan."
+
+assessment:
+  change_type: upgrade
+  rationale: |
+    The approved task manifest modernizes the existing Python service in place while preserving its current resilience and local SQLite behavior.
+  transformations:
+    - fromStack: "Process-local metrics"
+      fromStackVersion: "existing"
+      toStack: "API and CloudWatch observability"
+      toStackVersion: "approved plan"
+    - fromStack: "SQLite-only DLQ"
+      fromStackVersion: "existing"
+      toStack: "DynamoDB and SQS with SQLite fallback"
+      toStackVersion: "approved plan"
+    - fromStack: "Mock provider"
+      fromStackVersion: "existing"
+      toStack: "Open-weight STT-LLM-TTS provider boundary"
+      toStackVersion: "approved plan"
+    - fromStack: "ECS Fargate only"
+      fromStackVersion: "existing"
+      toStack: "Approval-gated EC2 g5.xlarge option"
+      toStackVersion: "option only; no provisioning"
+  grouping_needed: false
+  deep_planning: false
+
+progress_sync:
+  run_id: 5491122c-04b0-42aa-b3de-57852a2e85ad
+  grouping_mode: none
+  execution_mode: all-at-once
+  plan_start_time: "2026-09-19T15:23:02.2921889Z"
+  plan_completed_time: "2026-09-19T15:23:02.2921889Z"
+  execution_start_time: ""
+  execution_completed_time: ""
+  validation_start_time: ""
+  validation_completed_time: ""
+  total_phases: 8
+  completed_phases: 0
+  total_modules: 4
+  completed_modules: 0
+  total_tasks: 8
+  completed_tasks: 0
+  total_commits: 2
+  build_verified: false
+  test_verified: false

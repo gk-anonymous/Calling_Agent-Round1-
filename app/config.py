@@ -15,4 +15,12 @@ class Settings(BaseSettings):
     circuit_recovery_timeout_seconds: float = 5.0
     circuit_half_open_probes: int = 1
     http_timeout_seconds: float = 5.0
+    dlq_backend: str = "sqlite"
+    aws_dlq_table: str = ""
+    aws_dlq_queue_url: str = ""
+    aws_region: str = "ap-south-1"
+    publish_cloudwatch_metrics: bool = False
+    cloudwatch_namespace: str = "CollectionsChallenge"
+    service_name: str = "collections-inference"
+    provider_backend: str = "mock"
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")

@@ -99,7 +99,7 @@ resource "aws_iam_role_policy" "task" {
       },
       {
         Effect   = "Allow"
-        Action   = ["sqs:SendMessage"]
+        Action   = ["sqs:SendMessage", "sqs:ReceiveMessage", "sqs:DeleteMessage"]
         Resource = aws_sqs_queue.dlq.arn
       },
       {
@@ -293,6 +293,46 @@ resource "aws_cloudwatch_dashboard" "service" {
           metrics = [
             ["CollectionsChallenge", "InFlightCalls", "Service", local.name],
             ["AWS/ECS", "RunningTaskCount", "ClusterName", aws_ecs_cluster.main.name, "ServiceName", aws_ecs_service.service.name]
+          ]
+          stat   = "Average"
+          period = 60
+        }
+      },
+      {
+        type   = "metric"
+        x      = 0
+        y      = 6
+        width  = 12
+        height = 6
+        properties = {
+          title  = "Request outcomes and retries"
+          region = var.aws_region
+          view   = "timeSeries"
+          metrics = [
+            ["CollectionsChallenge", "RequestsTotal", "Service", local.name],
+            ["CollectionsChallenge", "RequestsSuccess", "Service", local.name],
+            ["CollectionsChallenge", "RequestsFailed", "Service", local.name],
+            ["CollectionsChallenge", "RetryTotal", "Service", local.name]
+          ]
+          stat   = "Sum"
+          period = 60
+        }
+      },
+      {
+        type   = "metric"
+        x      = 12
+        y      = 6
+        width  = 12
+        height = 6
+        properties = {
+          title  = "Latency percentiles"
+          region = var.aws_region
+          view   = "timeSeries"
+          metrics = [
+            ["CollectionsChallenge", "latency_p50_ms", "Service", local.name],
+            ["CollectionsChallenge", "latency_p90_ms", "Service", local.name],
+            ["CollectionsChallenge", "latency_p95_ms", "Service", local.name],
+            ["CollectionsChallenge", "latency_p99_ms", "Service", local.name]
           ]
           stat   = "Average"
           period = 60

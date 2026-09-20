@@ -50,5 +50,7 @@ class EventProcessor:
             return None
         response = await self.process(self.dlq.decode_event(row))
         self.dlq.finish_replay(event_id, response.success, "" if response.success else response.outcome)
+        if response.success and hasattr(self.dlq, "acknowledge"):
+            self.dlq.acknowledge(event_id)
         self.metrics.inc("dlq_replay_total")
         return response
