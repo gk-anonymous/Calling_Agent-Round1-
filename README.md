@@ -1,4 +1,3 @@
-Yes — below is the **complete copy-paste README.md**. It is written to accurately represent what you have actually built and deployed, without claiming that the GPU/open-weight models are already running.
 
 # Collections Voice-Agent Inference Service
 
