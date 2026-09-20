@@ -1,7 +1,7 @@
 
 # Collections Voice-Agent Inference Service
 
-Round 1 submission for the **Predixion AI x TalentX Open-Weight Collections Agent Challenge**.
+
 
 This project implements a resilient voice-agent inference service around an unreliable STT → LLM → TTS-style downstream dependency.
 
